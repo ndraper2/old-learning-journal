@@ -212,3 +212,10 @@ def entry(db, request):
     request.addfinalizer(cleanup)
 
     return expected
+
+def test_listing(app, entry):
+    response = app.get('/')
+    assert response.status_code == 200
+    actual = response.body
+    for expected in entry[:2]:
+        assert expected in actual
