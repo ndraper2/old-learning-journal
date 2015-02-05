@@ -8,7 +8,7 @@ from pyramid.view import view_config
 from waitress import serve
 import psycopg2
 from contextlib import closing
-fromm pyramid.events import NewRequest, subscriber
+from pyramid.events import NewRequest, subscriber
 
 
 DB_SCHEMA = """

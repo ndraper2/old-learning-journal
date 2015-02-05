@@ -21,10 +21,12 @@ def clear_db(settings):
         db.cursor().execute("DROP TABLE entries")
         db.commit()
 
+
 def clear_entries(settings):
     with closing(connect_db(settings)) as db:
         db.cursor().execute("DELETE FROM entries")
         db.commit()
+
 
 def run_query(db, query, params=(), get_results=True):
     cursor = db.cursor()
@@ -34,6 +36,7 @@ def run_query(db, query, params=(), get_results=True):
     if get_results:
         results = cursor.fetchall()
     return results
+
 
 @pytest.fixture(scope='session')
 def db(request):
@@ -47,3 +50,31 @@ def db(request):
     request.addfinalizer(cleanup)
 
     return settings
+
+
+@pytest.yield_fixture(scope='function')
+def req_context(db, request):
+    """mock a request with a database attached"""
+    settings = db
+    req = testing.DummyRequest()
+    with closing(connect_db(settings)) as db:
+        req.db = db
+        req.exception = None
+        yield req
+
+        # after a test has run, we clear out entries for isolation
+        clear_entries(settings)
+
+
+def test_write_entry(req_context):
+    from journal import write_entry
+    fields = ('title', 'text')
+    expected = ('Test Title', 'Test Text')
+    req_context.params = dict(zip(fields, expected))
+
+    # assert that there are no entries when we start
+    rows = run_query(req_context.db, "SELECT * FROM entries")
+    assert len(rows) == 1
+    actual = rows[0]
+    for idx, val in enumerate(expected):
+        assert val == actual[idx]
