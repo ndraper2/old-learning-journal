@@ -8,6 +8,7 @@ from pyramid.view import view_config
 from waitress import serve
 import psycopg2
 from contextlib import closing
+fromm pyramid.events import NewRequest, subscriber
 
 
 DB_SCHEMA = """
@@ -45,6 +46,12 @@ def init_db():
     with closing(connect_db(settings)) as db:
         db.cursor().execute(DB_SCHEMA)
         db.commit()
+
+
+def open_connection(event):
+    request = event.request
+    settings = request.registry.settings
+    request.db = connect_db(settings)
 
 
 def main():
