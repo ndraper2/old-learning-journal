@@ -85,3 +85,66 @@ def test_write_entry(req_context):
     actual = rows[0]
     for idx, val in enumerate(expected):
         assert val == actual[idx]
+
+def test_write_entry_not_string(req_context):
+    # 5 gets turned into a string, None throws an integrity error
+    from journal import write_entry
+    fields = ('title', 'text')
+    expected = (5, None)
+    req_context.params = dict(zip(fields, expected))
+
+    # assert that there are no entries when we start
+    rows = run_query(req_context.db, "SELECT * FROM entries")
+    assert len(rows) == 0
+
+    result = write_entry(req_context)
+    # manually commit so we can see the entry on query
+    req_context.db.commit()
+
+    rows = run_query(req_context.db, "SELECT title, text FROM entries")
+    assert len(rows) == 1
+    actual = rows[0]
+    for idx, val in enumerate(expected):
+        assert str(val) == actual[idx]
+
+def test_write_entry_wrong_columns(req_context):
+    # throws integrity error for not writing into title and text
+    from journal import write_entry
+    fields = ('bob', 'hope')
+    expected = ('some text', 'more text')
+    req_context.params = dict(zip(fields, expected))
+
+    # assert that there are no entries when we start
+    rows = run_query(req_context.db, "SELECT * FROM entries")
+    assert len(rows) == 0
+
+    result = write_entry(req_context)
+    # manually commit so we can see the entry on query
+    req_context.db.commit()
+
+    rows = run_query(req_context.db, "SELECT title, text FROM entries")
+    assert len(rows) == 1
+    actual = rows[0]
+    for idx, val in enumerate(expected):
+        assert str(val) == actual[idx]
+
+
+def test_write_entry_extra_columns(req_context):
+    # when we write into columns that aren't there, nothing happens
+    from journal import write_entry
+    fields = ('title', 'bob', 'text', 'hope')
+    expected = ('some text', 'more text', 'more', 'less')
+    req_context.params = dict(zip(fields, expected))
+
+    # assert that there are no entries when we start
+    rows = run_query(req_context.db, "SELECT * FROM entries")
+    assert len(rows) == 0
+
+    result = write_entry(req_context)
+    # manually commit so we can see the entry on query
+    req_context.db.commit()
+
+    rows = run_query(req_context.db, "SELECT title, text FROM entries")
+    assert len(rows) == 1
+    actual = rows[0]
+    assert rows == [('some text', 'more')]
