@@ -110,6 +110,7 @@ def test_write_entry_not_string(req_context):
     for idx, val in enumerate(expected):
         assert str(val) == actual[idx]
 
+
 def test_write_entry_wrong_columns(req_context):
     # throws integrity error for not writing into title and text
     from journal import write_entry
@@ -212,6 +213,7 @@ def entry(db, request):
     request.addfinalizer(cleanup)
 
     return expected
+
 
 def test_listing(app, entry):
     response = app.get('/')
