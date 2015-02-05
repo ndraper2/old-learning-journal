@@ -9,6 +9,7 @@ from waitress import serve
 import psycopg2
 from contextlib import closing
 from pyramid.events import NewRequest, subscriber
+import datetime
 
 
 DB_SCHEMA = """
@@ -20,13 +21,17 @@ CREATE TABLE IF NOT EXISTS entries (
 )
 """
 
+INSERT_ENTRY = """
+INSERT INTO entries (title, text, created) VALUES (%s, %s, %s)
+"""
+
 logging.basicConfig()
 log = logging.getLogger(__file__)
 
 
 @view_config(route_name='home', renderer='string')
 def home(request):
-    return "Hellow World"
+    return "Hello World"
 
 
 def connect_db(settings):
@@ -48,6 +53,7 @@ def init_db():
         db.commit()
 
 
+@subscriber(NewRequest)
 def open_connection(event):
     request = event.request
     settings = request.registry.settings
@@ -90,6 +96,14 @@ def main():
     config.scan()
     app = config.make_wsgi_app()
     return app
+
+
+def write_entry(request):
+    """write an entry into the database"""
+    title = request.params.get('title', None)
+    text = request.params.get('text', None)
+    created = datetime.datetime.utcnow()
+    request.db.cursor().execute(INSERT_ENTRY, [title, text, created])
 
 
 if __name__ == '__main__':
