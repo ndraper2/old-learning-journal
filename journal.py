@@ -8,6 +8,7 @@ from pyramid.view import view_config
 from pyramid.events import NewRequest, subscriber
 from pyramid.httpexceptions import HTTPFound, HTTPInternalServerError
 from pyramid.authentication import AuthTktAuthenticationPolicy
+from pyramid.authorization import ACLAuthorizationPolicy
 from waitress import serve
 import psycopg2
 from contextlib import closing
@@ -123,11 +124,12 @@ def main():
     # configuration setup
     config = Configurator(
         settings=settings,
-        session_factory=session_factory
+        session_factory=session_factory,
         authentication_policy=AuthTktAuthenticationPolicy(
             secret=auth_secret,
             hashalg='sha512'
-            ),
+        ),
+        authorization_policy=ACLAuthorizationPolicy(),
     )
     config.include('pyramid_jinja2')
     config.add_route('home', '/')

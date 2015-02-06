@@ -230,3 +230,20 @@ def test_post_to_add_view_using_get(app):
     }
     with pytest.raises(AppError):
         response = app.get('/add', params=entry_data, status='3*')
+
+
+@pytest.fixture(scope='function')
+def auth_req(request):
+    settings = {
+        'auth.username': 'admin',
+        'auth.password': 'secret',
+    }
+    testing.setUp(settings=settings)
+    req = testing.DummyRequest()
+
+    def cleanup():
+        testing.tearDown()
+
+    request.addfinalizer(cleanup)
+
+    return req
