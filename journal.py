@@ -75,6 +75,24 @@ def close_connection(request):
         request.db.close()
 
 
+def write_entry(request):
+    """write an entry into the database"""
+    title = request.params.get('title', None)
+    text = request.params.get('text', None)
+    created = datetime.datetime.utcnow()
+    request.db.cursor().execute(INSERT_ENTRY, [title, text, created])
+
+
+@view_config(route_name='home', renderer='templates/list.jinja2')
+def read_entries(request):
+    """return a list of all entries as dictionaries"""
+    cursor = request.db.cursor()
+    cursor.execute(SELECT_ALL_ENTRIES)
+    keys = ('id', 'title', 'text', 'created')
+    entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
+    return {'entries': entries}
+
+
 def main():
     """Create a configured wsgi app"""
     settings = {}
@@ -96,24 +114,6 @@ def main():
     config.scan()
     app = config.make_wsgi_app()
     return app
-
-
-def write_entry(request):
-    """write an entry into the database"""
-    title = request.params.get('title', None)
-    text = request.params.get('text', None)
-    created = datetime.datetime.utcnow()
-    request.db.cursor().execute(INSERT_ENTRY, [title, text, created])
-
-
-@view_config(route_name='home', renderer='templates/list.jinja2')
-def read_entries(request):
-    """return a list of all entries as dictionaries"""
-    cursor = request.db.cursor()
-    cursor.execute(SELECT_ALL_ENTRIES)
-    keys = ('id', 'title', 'text', 'created')
-    entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
-    return {'entries': entries}
 
 
 if __name__ == '__main__':

@@ -4,6 +4,7 @@ from pyramid import testing
 import pytest
 import datetime
 import os
+from psycopg2 import IntegrityError
 
 from journal import connect_db
 from journal import DB_SCHEMA
@@ -100,15 +101,8 @@ def test_write_entry_not_string(req_context):
     rows = run_query(req_context.db, "SELECT * FROM entries")
     assert len(rows) == 0
 
-    result = write_entry(req_context)
-    # manually commit so we can see the entry on query
-    req_context.db.commit()
-
-    rows = run_query(req_context.db, "SELECT title, text FROM entries")
-    assert len(rows) == 1
-    actual = rows[0]
-    for idx, val in enumerate(expected):
-        assert str(val) == actual[idx]
+    with pytest.raises(IntegrityError):
+        result = write_entry(req_context)
 
 
 def test_write_entry_wrong_columns(req_context):
@@ -122,15 +116,8 @@ def test_write_entry_wrong_columns(req_context):
     rows = run_query(req_context.db, "SELECT * FROM entries")
     assert len(rows) == 0
 
-    result = write_entry(req_context)
-    # manually commit so we can see the entry on query
-    req_context.db.commit()
-
-    rows = run_query(req_context.db, "SELECT title, text FROM entries")
-    assert len(rows) == 1
-    actual = rows[0]
-    for idx, val in enumerate(expected):
-        assert str(val) == actual[idx]
+    with pytest.raises(IntegrityError):
+        result = write_entry(req_context)
 
 
 def test_write_entry_extra_columns(req_context):
@@ -220,4 +207,16 @@ def test_listing(app, entry):
     assert response.status_code == 200
     actual = response.body
     for expected in entry[:2]:
+        assert expected in actual
+
+
+def test_post_to_add_view(app):
+    entry_data = {
+        'title': 'Hello there',
+        'text': 'This is a post',
+    }
+    response = app.post('/add', params=entry_data, status='3*')
+    redirected = response.follow()
+    actual = redirected.body
+    for expected in entry_data.values():
         assert expected in actual
