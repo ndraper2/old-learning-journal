@@ -5,6 +5,7 @@ import pytest
 import datetime
 import os
 from psycopg2 import IntegrityError
+from webtest.app import AppError
 
 from journal import connect_db
 from journal import DB_SCHEMA
@@ -220,3 +221,12 @@ def test_post_to_add_view(app):
     actual = redirected.body
     for expected in entry_data.values():
         assert expected in actual
+
+
+def test_post_to_add_view_using_get(app):
+    entry_data = {
+        'title': 'Hello there',
+        'text': 'This is a post',
+    }
+    with pytest.raises(AppError):
+        response = app.get('/add', params=entry_data, status='3*')
