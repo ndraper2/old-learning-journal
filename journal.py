@@ -106,6 +106,19 @@ def read_entries(request):
     return {'entries': entries}
 
 
+def do_login(request):
+    username = request.params.get('username', None)
+    password = request.params.get('password', None)
+    if not (username and password):
+        raise ValueError('both username and password are required')
+
+    settings = request.registry.settings
+    if username == settings.get('auth.username', ''):
+        if password == settings.get('auth.password', ''):
+            return True
+    return False
+
+
 def main():
     """Create a configured wsgi app"""
     settings = {}
