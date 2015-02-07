@@ -6,6 +6,7 @@ import datetime
 import os
 from psycopg2 import IntegrityError
 from webtest.app import AppError
+from cryptacular.bcrypt import BCRYPTPasswordManager
 
 from journal import connect_db
 from journal import DB_SCHEMA
@@ -234,9 +235,10 @@ def test_post_to_add_view_using_get(app):
 
 @pytest.fixture(scope='function')
 def auth_req(request):
+    manager = BCRYPTPasswordManager()
     settings = {
         'auth.username': 'admin',
-        'auth.password': 'secret',
+        'auth.password': manager.encode('secret'),
     }
     testing.setUp(settings=settings)
     req = testing.DummyRequest()

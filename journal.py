@@ -13,6 +13,7 @@ from waitress import serve
 import psycopg2
 from contextlib import closing
 import datetime
+from cryptacular.bcrypt import BCRYPTPasswordManager
 
 
 DB_SCHEMA = """
@@ -113,9 +114,10 @@ def do_login(request):
         raise ValueError('both username and password are required')
 
     settings = request.registry.settings
+    manager = BCRYPTPasswordManager()
     if username == settings.get('auth.username', ''):
-        if password == settings.get('auth.password', ''):
-            return True
+        hashed = settings.get('auth.password', '')
+        return manager.check(hashed, password)
     return False
 
 
@@ -128,7 +130,10 @@ def main():
         'DATABASE_URL', 'dbname=learning_journal user=ndraper2'
     )
     settings['auth.username'] = os.environ.get('AUTH_USERNAME', 'admin')
-    settings['auth.password'] = os.environ.get('AUTH_PASSWORD', 'secret')
+    manager = BCRYPTPasswordManager()
+    settings['auth.password'] = os.environ.get(
+        'AUTH_PASSWORD', manager.encode('secret')
+    )
     # secret value for session signing:
     secret = os.environ.get('JOURNAL_SESSION_SECRET', 'itsaseekrit')
     session_factory = SignedCookieSessionFactory(secret)
