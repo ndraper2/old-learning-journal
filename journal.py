@@ -9,6 +9,7 @@ from pyramid.events import NewRequest, subscriber
 from pyramid.httpexceptions import HTTPFound, HTTPInternalServerError
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
+from pyramid.security import remember, forget
 from waitress import serve
 import psycopg2
 from contextlib import closing
@@ -121,6 +122,24 @@ def do_login(request):
     return False
 
 
+@view_config(route_name='login', renderer='templates/login.jinja2')
+def login(request):
+    """authenticate a user with a username and password"""
+    username = request.params.get('username', '')
+    error = ''
+    if request.method == 'POST':
+        error = "Login Failed"
+        authenticated = False
+        try:
+            authenticated = do_login(request)
+        except ValueError:
+            error = str(ValueError)
+        if authenticated:
+            headers = remember(request, username)
+            return HTTPFound(request.route_url('home'), headers=headers)
+    return {'error': error, 'username': username}
+
+
 def main():
     """Create a configured wsgi app"""
     settings = {}
@@ -152,6 +171,7 @@ def main():
     config.include('pyramid_jinja2')
     config.add_route('home', '/')
     config.add_route('add', '/add')
+    config.add_route('login', '/login')
     config.scan()
     app = config.make_wsgi_app()
     return app
