@@ -11,6 +11,7 @@ from pyramid import testing
 
 TEST_DSN = 'dbname=test_learning_journal user=ndraper2'
 settings = {'db': TEST_DSN}
+INPUT_BTN = '<input type="submit" value="Share" name="Share"/>'
 
 
 @world.absorb
@@ -21,6 +22,15 @@ def make_an_entry():
     }
     response = app.get('/add', params=entry_data, status='3*')
     return response
+
+@world.absorb
+def login_helper(username, password, app):
+    """encapsulate app login for reuse in tests
+
+    Accept all status codes so that we can make assertions in tests
+    """
+    login_data = {'username': username, 'password': password}
+    return app.post('/login', params=login_data, status='*')
 
 
 @before.all
@@ -69,3 +79,15 @@ def get_home_page(step):
 #     actual = response.body
 #     for expected in entry[:2]:
 #         assert expected in actual
+
+
+@step('a logged in user')
+def a_logged_in_user(step):
+    username, password = ('admin', 'secret')
+    app = world.test_app
+    redirect = login_helper(username, password, app)
+    assert redirect.status_code == 302
+    response = redirect.follow()
+    assert response.status_code == 200
+    actual = response.body
+    assert INPUT_BTN in actual
