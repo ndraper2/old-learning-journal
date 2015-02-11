@@ -18,6 +18,6 @@ Feature: Journal Editing
         Then I can use MarkDown to format my post
 
     Scenario: Code blocks
-        Given a journal entry
+        Given a journal detail page
         When I look at a post
         Then I can see colorized code samples

@@ -36,6 +36,10 @@ SELECT_ALL_ENTRIES = """
 SELECT id, title, text, created FROM entries ORDER BY created DESC
 """
 
+SELECT_ONE_ENTRY = """
+SELECT id, title, text, created FROM entries WHERE id=%s
+"""
+
 logging.basicConfig()
 log = logging.getLogger(__file__)
 
@@ -141,11 +145,22 @@ def login(request):
             return HTTPFound(request.route_url('home'), headers=headers)
     return {'error': error, 'username': username}
 
+
 @view_config(route_name='logout')
 def logout(request):
     """revoke the user's token on button press"""
     headers = forget(request)
     return HTTPFound(request.route_url('home'), headers=headers)
+
+
+@view_config(route_name='detail', renderer='detail.jinja2')
+def detail(request):
+    """return one entry as a dictionary"""
+    cursor = request.db.cursor()
+    cursor.execute(SELECT_ONE_ENTRY)
+    keys = ('id', 'title', 'text', 'created')
+    entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
+    return {'entries': entries}
 
 
 def main():
@@ -182,6 +197,7 @@ def main():
     config.add_route('add', '/add')
     config.add_route('login', '/login')
     config.add_route('logout', '/logout')
+    config.add_route('detail', '/\%d')
     config.scan()
     app = config.make_wsgi_app()
     return app
