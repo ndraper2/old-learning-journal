@@ -1,57 +1,71 @@
-from lettuce import step
-from lettuce import world
+from lettuce import before, after, world, step
+import datetime
+import os
+from contextlib import closing
 
 from journal import connect_db
 from journal import DB_SCHEMA
 from journal import INSERT_ENTRY
 
+from pyramid import testing
+
 TEST_DSN = 'dbname=test_learning_journal user=ndraper2'
+settings = {'db': TEST_DSN}
 
 
-def init_db(settings):
+@world.absorb
+def make_an_entry():
+    entry_data = {
+        'title': 'Hello there',
+        'text': 'This is a post',
+    }
+    response = app.get('/add', params=entry_data, status='3*')
+    return response
+
+
+@before.all
+def init_db():
     with closing(connect_db(settings)) as db:
         db.cursor().execute(DB_SCHEMA)
         db.commit()
 
 
-def clear_db(settings):
+@after.all
+def clear_db(total):
     with closing(connect_db(settings)) as db:
         db.cursor().execute("DROP TABLE entries")
         db.commit()
 
 
-def clear_entries(settings):
+@after.each_scenario
+def clear_entries(scenario):
     with closing(connect_db(settings)) as db:
         db.cursor().execute("DELETE FROM entries")
         db.commit()
 
 
-def run_query(db, query, params=(), get_results=True):
-    cursor = db.cursor()
-    cursor.execute(query, params)
-    db.commit()
-    results = None
-    if get_results:
-        results = cursor.fetchall()
-    return results
+@before.each_scenario
+def app(scenario):
+    from journal import main
+    from webtest import TestApp
+    os.environ['DATABASE_URL'] = TEST_DSN
+    app = main()
+    world.test_app = TestApp(app)
 
 
-@before.all
-def open_db(request):
-    settings = {'db': TEST_DSN}
-    init_db(settings)
-    return settings
+@step('a journal home page')
+def get_home_page(step):
+    response = world.test_app.get('/')
+    assert response.status_code == 200
+    actual = response.body
+    expected = 'No entries here so far'
+    assert expected in actual
 
 
-@after.all
-def close_db(request):
-    settings = {'db': TEST_DSN}
-
-    def cleanup():
-        clear_db(settings)
-
-    request.addfinalizer(cleanup)
-
-
-@step('a journal entry list')
-def journal_entry_list()
+# @step('I click on the entry link')
+# def go_to_detail(step):
+#     response = world.test_app.get('/1')
+#     assert response.status_code == 200
+#     actual = response.body
+#     for expected in entry[:2]:
+#         assert expected in actual
