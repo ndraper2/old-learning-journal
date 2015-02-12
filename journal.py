@@ -6,7 +6,7 @@ from pyramid.config import Configurator
 from pyramid.session import SignedCookieSessionFactory
 from pyramid.view import view_config
 from pyramid.events import NewRequest, subscriber
-from pyramid.httpexceptions import HTTPFound, HTTPInternalServerError
+from pyramid.httpexceptions import HTTPFound, HTTPInternalServerError, HTTPForbidden
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.security import remember, forget
@@ -40,6 +40,10 @@ SELECT id, title, text, created FROM entries ORDER BY created DESC
 
 SELECT_ONE_ENTRY = """
 SELECT id, title, text, created FROM entries WHERE id=%s
+"""
+
+UPDATE_ENTRY = """
+UPDATE entries SET (title, text, created) = (%s, %s, %s) WHERE id = %s
 """
 
 logging.basicConfig()
@@ -168,6 +172,33 @@ def detail(request):
     return {'entries': entries}
 
 
+def update_entry(request, id):
+    title = request.params.get('title')
+    text = request.params.get('text')
+    created = datetime.datetime.utcnow()
+    request.db.cursor().execute(UPDATE_ENTRY, [title, text, created, id])
+
+
+@view_config(route_name='edit', renderer='templates/edit.jinja2')
+def edit_entry(request):
+    if request.authenticated_userid:
+        post_id = request.matchdict.get('id', None)
+        cursor = request.db.cursor()
+        cursor.execute(SELECT_ONE_ENTRY, [post_id])
+        keys = ('id', 'title', 'text', 'created')
+        entry = [dict(zip(keys, row)) for row in cursor.fetchone()]
+        if request.method == 'POST':
+            try:
+                id = request.matchdict['id']
+                update_entry(request, id)
+            except psycopg2.Error:
+                return HTTPInternalServerError
+            return HTTPFound(request.route_url('home'))
+        return {'entry': entry}
+    else:
+        return HTTPForbidden()
+
+
 def markd(input):
     return markdown.markdown(input, extension=['CodeHilite'])
 
@@ -207,7 +238,7 @@ def main():
     config.add_route('add', '/add')
     config.add_route('login', '/login')
     config.add_route('logout', '/logout')
-    config.add_route('detail', '/detail/{id}')
+    config.add_route('detail', '/detail/{id:\d+}')
     config.scan()
     app = config.make_wsgi_app()
     return app

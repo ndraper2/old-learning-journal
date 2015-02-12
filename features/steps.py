@@ -61,12 +61,12 @@ def app(scenario):
     from webtest import TestApp
     os.environ['DATABASE_URL'] = TEST_DSN
     app = main()
-    world.test_app = TestApp(app)
+    world.app = TestApp(app)
 
 
 @step('a journal home page')
 def get_home_page(step):
-    response = world.test_app.get('/')
+    response = world.app.get('/')
     assert response.status_code == 200
     actual = response.body
     expected = 'No entries here so far'
@@ -75,8 +75,8 @@ def get_home_page(step):
 
 @step('When I click on the entry link')
 def click_on_the_entry_link(step):
-    world.make_an_entry(world.test_app)
-    response = world.test_app.get('/1')
+    world.make_an_entry(world.app)
+    response = world.app.get('/1')
     assert response.status_code == 200
     # actual = response.body
     # for expected in entry[:2]:
@@ -86,7 +86,7 @@ def click_on_the_entry_link(step):
 @step('a logged in user')
 def a_logged_in_user(step):
     username, password = ('admin', 'secret')
-    app = world.test_app
+    app = world.app
     redirect = login_helper(username, password, app)
     assert redirect.status_code == 302
     response = redirect.follow()
