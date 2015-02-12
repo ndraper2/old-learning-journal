@@ -1,5 +1,7 @@
 {% extends "base.jinja2" %}
 {% block body %}
+{% for entry in entries %}
+
 <article id="title={{ entry.id }}">
   <h1 class="headingLink">{{ entry.title }}</h1>
   <p><small>{{ entry.created.strftime('%b. %d, %Y') }}</small>
@@ -9,4 +11,5 @@
     <hr class="titleDivider">
   </div>
 </article>
+{% endfor %}
 {% endblock %}

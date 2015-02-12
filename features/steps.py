@@ -15,13 +15,14 @@ INPUT_BTN = '<input type="submit" value="Share" name="Share"/>'
 
 
 @world.absorb
-def make_an_entry():
+def make_an_entry(app):
     entry_data = {
         'title': 'Hello there',
         'text': 'This is a post',
     }
-    response = app.get('/add', params=entry_data, status='3*')
+    response = app.post('/add', params=entry_data, status='3*')
     return response
+
 
 @world.absorb
 def login_helper(username, password, app):
@@ -72,13 +73,14 @@ def get_home_page(step):
     assert expected in actual
 
 
-# @step('I click on the entry link')
-# def go_to_detail(step):
-#     response = world.test_app.get('/1')
-#     assert response.status_code == 200
-#     actual = response.body
-#     for expected in entry[:2]:
-#         assert expected in actual
+@step('When I click on the entry link')
+def click_on_the_entry_link(step):
+    world.make_an_entry(world.test_app)
+    response = world.test_app.get('/1')
+    assert response.status_code == 200
+    # actual = response.body
+    # for expected in entry[:2]:
+    #     assert expected in actual
 
 
 @step('a logged in user')

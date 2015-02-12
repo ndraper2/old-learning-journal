@@ -15,6 +15,8 @@ import psycopg2
 from contextlib import closing
 import datetime
 from cryptacular.bcrypt import BCRYPTPasswordManager
+import markdown
+import jinja2
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -153,18 +155,24 @@ def logout(request):
     return HTTPFound(request.route_url('home'), headers=headers)
 
 
-@view_config(route_name='detail', renderer='detail.jinja2')
+@view_config(route_name='detail', renderer='templates/detail.jinja2')
 def detail(request):
     """return one entry as a dictionary"""
+    post_id = request.matchdict.get('id', None)
     cursor = request.db.cursor()
-    cursor.execute(SELECT_ONE_ENTRY)
+    cursor.execute(SELECT_ONE_ENTRY, [post_id])
     keys = ('id', 'title', 'text', 'created')
     entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
     return {'entries': entries}
 
 
+def markd(input):
+    return markdown.markdown(input, extension=['CodeHilite'])
+
+
 def main():
     """Create a configured wsgi app"""
+    jinja2.filters.FILTERS['markdown'] = markd
     settings = {}
     settings['reload_all'] = os.environ.get('DEBUG', True)
     settings['debug_all'] = os.environ.get('DEBUG', True)
@@ -197,7 +205,7 @@ def main():
     config.add_route('add', '/add')
     config.add_route('login', '/login')
     config.add_route('logout', '/logout')
-    config.add_route('detail', '/\%d')
+    config.add_route('detail', '/detail/{id}')
     config.scan()
     app = config.make_wsgi_app()
     return app
@@ -206,4 +214,4 @@ def main():
 if __name__ == '__main__':
     app = main()
     port = os.environ.get('PORT', 5000)
-    serve(app, host='0.0.0.0', port=port)
+    serve(app, host='127.0.0.1', port=port)
