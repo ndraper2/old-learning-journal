@@ -163,6 +163,8 @@ def detail(request):
     cursor.execute(SELECT_ONE_ENTRY, [post_id])
     keys = ('id', 'title', 'text', 'created')
     entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
+    for e in entries:
+        e['text'] = markdown.markdown(e['text'], extensions=['codehilite', 'fenced_code'])
     return {'entries': entries}
 
 
