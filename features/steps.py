@@ -25,6 +25,16 @@ def make_an_entry(app):
 
 
 @world.absorb
+def make_a_markdown_entry(app):
+    entry_data = {
+        'title': 'Hello there',
+        'text': '#This is a heading',
+    }
+    response = app.post('/add', params=entry_data, status='3*')
+    return response
+
+
+@world.absorb
 def login_helper(username, password, app):
     """encapsulate app login for reuse in tests
 
@@ -48,7 +58,7 @@ def clear_db(total):
         db.commit()
 
 
-@after.each_scenario
+@after.each_feature
 def clear_entries(scenario):
     with closing(connect_db(settings)) as db:
         db.cursor().execute("DELETE FROM entries")
@@ -75,21 +85,42 @@ def get_home_page(step):
 
 @step('When I click on the entry link')
 def click_on_the_entry_link(step):
+    login_helper('admin', 'secret', world.app)
     world.make_an_entry(world.app)
-    response = world.app.get('/1')
+    response = world.app.get('/')
+    response = response.click(href='detail/1')
     assert response.status_code == 200
-    # actual = response.body
-    # for expected in entry[:2]:
-    #     assert expected in actual
+    assert 'class="titleDivider"' in response.body
+
+
+@step('Then I get the detail page for that entry')
+def i_get_the_detail_page(step):
+    response = world.app.get('/detail/1')
+    assert response.status_code == 200
+    assert 'class="titleDivider"' in response.body
 
 
 @step('a logged in user')
 def a_logged_in_user(step):
-    username, password = ('admin', 'secret')
-    app = world.app
-    redirect = login_helper(username, password, app)
+    redirect = login_helper('admin', 'secret', world.app)
     assert redirect.status_code == 302
     response = redirect.follow()
     assert response.status_code == 200
     actual = response.body
     assert INPUT_BTN in actual
+
+
+@step('a journal detail page')
+def journal_detail_page(step):
+    response = world.app.get('/detail/1')
+    assert response.status_code == 200
+    assert 'This is a post' in response.body
+
+
+@step('I click on the edit button')
+def click_on_the_edit_button(step):
+    login_helper('admin', 'secret', world.app)
+    response = world.app.get('/detail/1')
+    assert response.status_code == 200
+    response.click(href='/edit/1')
+

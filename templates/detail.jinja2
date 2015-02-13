@@ -1,6 +1,5 @@
 {% extends "base.jinja2" %}
 {% block body %}
-{% for entry in entries %}
 
 <article id="title={{ entry.id }}">
   <h1 class="headingLink">{{ entry.title }}</h1>
@@ -11,5 +10,7 @@
     <hr class="titleDivider">
   </div>
 </article>
-{% endfor %}
+{% if request.authenticated_userid %}
+<a href="/edit/{{ entry.id }}">Edit this entry</a>
+{% endif %}
 {% endblock %}
