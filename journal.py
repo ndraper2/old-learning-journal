@@ -6,7 +6,8 @@ from pyramid.config import Configurator
 from pyramid.session import SignedCookieSessionFactory
 from pyramid.view import view_config
 from pyramid.events import NewRequest, subscriber
-from pyramid.httpexceptions import HTTPFound, HTTPInternalServerError, HTTPForbidden
+from pyramid.httpexceptions import (HTTPFound, HTTPInternalServerError,
+                                    HTTPForbidden)
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.security import remember, forget
@@ -120,6 +121,9 @@ def read_entries(request):
     cursor.execute(SELECT_ALL_ENTRIES)
     keys = ('id', 'title', 'text', 'created')
     entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
+    for e in entries:
+        e['text'] = markdown.markdown(e['text'],
+        extensions=['codehilite', 'fenced_code'])
     return {'entries': entries}
 
 
@@ -170,7 +174,8 @@ def detail(request):
     cursor.execute(SELECT_ONE_ENTRY, [post_id])
     keys = ('id', 'title', 'text', 'created')
     entry = dict(zip(keys, cursor.fetchone()))
-    entry['text'] = markdown.markdown(entry['text'], extensions=['codehilite', 'fenced_code'])
+    entry['text'] = markdown.markdown(entry['text'],
+        extensions=['codehilite', 'fenced_code'])
     return {'entry': entry}
 
 
