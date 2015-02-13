@@ -18,17 +18,11 @@ INPUT_BTN = '<input type="submit" value="Share" name="Share"/>'
 def make_an_entry(app):
     entry_data = {
         'title': 'Hello there',
-        'text': 'This is a post',
-    }
-    response = app.post('/add', params=entry_data, status='3*')
-    return response
-
-
-@world.absorb
-def make_a_markdown_entry(app):
-    entry_data = {
-        'title': 'Hello there',
-        'text': '#This is a heading',
+        'text': '''#This is a post'
+```python
+    def func(x):
+        return x
+```''',
     }
     response = app.post('/add', params=entry_data, status='3*')
     return response
@@ -137,14 +131,14 @@ def taken_to_the_edit_page(step):
 @step('a journal edit form')
 def a_journal_edit_form(step):
     login_helper('admin', 'secret', world.app)
-    world.make_a_markdown_entry(world.app)
-    response = world.app.get('/edit/2')
+    response = world.app.get('/edit/1')
     assert response.status_code == 200
     assert response.form
-
 
 
 @step('I type in the edit box')
 def type_in_the_edit_box(step):
     login_helper('admin', 'secret', world.app)
+    response = world.app.get('/edit/1')
+    response.form
     pass
