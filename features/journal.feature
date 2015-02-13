@@ -10,7 +10,7 @@ Feature: Journal Editing
         Given a logged in user
         And a journal detail page
         When I click on the edit button
-        Then I'm taken to the edit page for that entry
+        Then I am taken to the edit page for that entry
 
     Scenario: Markdown Entries
         Given a journal edit form
