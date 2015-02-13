@@ -66,6 +66,7 @@ def app(scenario):
     os.environ['DATABASE_URL'] = TEST_DSN
     app = main()
     world.app = TestApp(app)
+    login_helper('admin', 'secret', world.app)
 
 
 @step('a journal home page')
@@ -113,7 +114,6 @@ def journal_detail_page(step):
 
 @step('I click on the edit button')
 def click_on_the_edit_button(step):
-    login_helper('admin', 'secret', world.app)
     response = world.app.get('/detail/1')
     assert response.status_code == 200
     response = response.click(href='/edit/1')
@@ -122,15 +122,13 @@ def click_on_the_edit_button(step):
 
 @step('I am taken to the edit page for that entry')
 def taken_to_the_edit_page(step):
-    login_helper('admin', 'secret', world.app)
     response = world.app.get('/edit/1')
     assert response.status_code == 200
-    assert 'value="Share"' in response.body
+    assert 'id="editbtn"' in response.body
 
 
 @step('a journal edit form')
 def a_journal_edit_form(step):
-    login_helper('admin', 'secret', world.app)
     response = world.app.get('/edit/1')
     assert response.status_code == 200
     assert response.form
@@ -138,7 +136,14 @@ def a_journal_edit_form(step):
 
 @step('I type in the edit box')
 def type_in_the_edit_box(step):
-    login_helper('admin', 'secret', world.app)
     response = world.app.get('/edit/1')
-    response.form
-    pass
+    print response.form.fields.values()
+    response.form['title'] = 'Test edit'
+    response.form['text'] = '''
+```python
+    def func(x):
+        print "Edit Success"
+        return x
+```'''
+    redirect = response.form.submit()
+    assert redirect.status_code == 302
