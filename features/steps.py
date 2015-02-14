@@ -1,13 +1,9 @@
 from lettuce import before, after, world, step
-import datetime
 import os
 from contextlib import closing
-
 from journal import connect_db
 from journal import DB_SCHEMA
-from journal import INSERT_ENTRY
 
-from pyramid import testing
 
 TEST_DSN = 'dbname=test_learning_journal user=ndraper2'
 settings = {'db': TEST_DSN}
@@ -137,7 +133,7 @@ def a_journal_edit_form(step):
 @step('I type in the edit box')
 def type_in_the_edit_box(step):
     response = world.app.get('/edit/1')
-    print response.form.fields.values()
+    assert 'id="editbtn"' in response.body
     response.form['title'] = 'Test edit'
     response.form['text'] = '''
 ```python
@@ -147,3 +143,30 @@ def type_in_the_edit_box(step):
 ```'''
     redirect = response.form.submit()
     assert redirect.status_code == 302
+    response = redirect.follow()
+    assert response.status_code == 200
+
+
+@step('I can use MarkDown to format my post')
+def use_markdown_to_format(step):
+    response = world.app.get('/detail/1')
+    assert response.status_code == 200
+    assert "<pre>" in response.body
+
+
+@step('a new journal detail page')
+def new_detail_page(step):
+    response = world.app.get('/detail/1')
+    assert response.status_code == 200
+
+
+@step('I look at a post')
+def look_at_a_post(step):
+    response = world.app.get('/detail/1')
+    assert 'Test edit' in response.body
+
+
+@step('I can see colorized code samples')
+def can_see_colorized_code(step):
+    response = world.app.get('/detail/1')
+    assert '<span class="k">' in response.body
