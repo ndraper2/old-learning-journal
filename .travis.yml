@@ -4,6 +4,7 @@ python:
 install: "pip install -r requirements.txt"
 before_script:
   - psql  -c 'create user ndraper2 with superuser;' -U postgres
+  - psql -c 'create database ndraper2;' -U postgres
   - psql -c 'create database test_learning_journal;' -U ndraper2
   - psql -U ndraper2 -c "create extension postgis"
 script: lettuce
